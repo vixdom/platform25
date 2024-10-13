@@ -3,11 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Upload RFP</title>
+  <title>Platform 25 - Upload RFP</title>
 </head>
 <body>
-  <h1>Upload RFP</h1>
-  <p>Log in with Google and upload RFP documents.</p>
+  <header>
+    <h1>Platform 25</h1>
+  </header>
+  
+  <h2>Upload RFP</h2>
+  <p>Log in with Google and upload RFP documents to a new folder.</p>
   
   <button id="login">Login with Google</button>
   <form id="uploadForm" style="display:none;">
@@ -20,6 +24,7 @@
 
   <script>
     let accessToken = '';
+    let folderId = '';
 
     document.getElementById('login').addEventListener('click', () => {
       const oauthUrl = 'https://accounts.google.com/o/oauth2/auth?' +
@@ -37,53 +42,4 @@
         accessToken = new URLSearchParams(hash.substring(1)).get('access_token');
         if (accessToken) {
           document.getElementById('login').style.display = 'none';
-          document.getElementById('uploadForm').style.display = 'block';
-        }
-      }
-    };
-
-    const form = document.getElementById('uploadForm');
-    const statusMessage = document.getElementById('statusMessage');
-
-    form.addEventListener('submit', function(event) {
-      event.preventDefault();
-
-      const files = document.getElementById('fileInput').files;
-      if (files.length === 0) {
-        statusMessage.textContent = 'Please select at least one file.';
-        return;
-      }
-
-      statusMessage.textContent = 'Uploading...';
-
-      // Upload the file(s) to Google Drive
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const metadata = {
-          name: file.name,
-          mimeType: file.type
-        };
-
-        const formData = new FormData();
-        formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-        formData.append('file', file);
-
-        fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${accessToken}`
-          },
-          body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-          statusMessage.textContent = 'Files uploaded successfully!';
-        })
-        .catch(error => {
-          statusMessage.textContent = 'Error uploading file!';
-        });
-      }
-    });
-  </script>
-</body>
-</html>
+         
