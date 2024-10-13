@@ -15,31 +15,4 @@
   
   <button id="login">Login with Google</button>
   <form id="uploadForm" style="display:none;">
-    <input type="file" id="fileInput" name="files" multiple>
-    <br><br>
-    <button type="submit">Upload</button>
-  </form>
-
-  <p id="statusMessage"></p>
-
-  <script>
-    let accessToken = '';
-    let folderId = '';
-
-    document.getElementById('login').addEventListener('click', () => {
-      const oauthUrl = 'https://accounts.google.com/o/oauth2/auth?' +
-        'client_id=184708376714-fu015fp4sur3uasrb9mqmnrhrakmqtpb.apps.googleusercontent.com&' +
-        'redirect_uri=https://vixdom.github.io/platform25/&' +
-        'scope=https://www.googleapis.com/auth/drive.file&' +
-        'response_type=token';
-      
-      window.location.href = oauthUrl;
-    });
-
-    window.onload = function() {
-      const hash = window.location.hash;
-      if (hash) {
-        accessToken = new URLSearchParams(hash.substring(1)).get('access_token');
-        if (accessToken) {
-          document.getElementById('login').style.display = 'none';
-         
+    <inp
