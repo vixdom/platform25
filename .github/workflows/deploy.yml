@@ -24,12 +24,16 @@ jobs:
         echo "const OPENAI_API_KEY = '${{ secrets.OPENAI_KEY }}';" > config.js
       shell: bash
 
-    # Remove the step that attempts to fetch and clean the gh-pages branch
+    - name: Initialize gh-pages Branch
+      run: |
+        git checkout --orphan gh-pages  # Create or switch to a new orphan branch gh-pages
+        git rm -rf .  # Remove all files in this orphan branch
+        touch .nojekyll  # Prevent GitHub Pages from using Jekyll, can be removed if unnecessary
+      shell: bash
 
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v4
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./  # The directory where index.html is located
-        destination_branch: gh-pages  # Deploy to the gh-pages branch
         force_orphan: true  # Ensure a clean push to gh-pages
