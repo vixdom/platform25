@@ -4,7 +4,7 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches:
-      - main  # Specify the branch you use for deployment
+      - main  # Or whichever branch you use for deployment
 
 jobs:
   deploy:
@@ -13,6 +13,11 @@ jobs:
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v2
+
+    - name: Set up Git
+      run: |
+        git config --global user.email "you@example.com"
+        git config --global user.name "Your Name"
 
     - name: Create config.js with API Key
       run: |
@@ -23,5 +28,5 @@ jobs:
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./  # Your project root directory (./) where index.html is located
-        force_orphan: true
+        publish_dir: ./  # The directory where your index.html is located
+        force_orphan: true  # This forces a clean push to gh-pages
