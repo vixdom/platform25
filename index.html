@@ -154,6 +154,48 @@
     console.error('Error:', error);
   });
 </script>
+<script>
+  // Now you can access the API key from the config.js file
+  const apiKey = OPENAI_API_KEY;  // This is coming from the dynamically created config.js
+
+  console.log("Loaded API Key:", apiKey);  // Log the API key to ensure it's loaded properly
+
+  // Example usage of the API key to call the OpenAI API
+  document.getElementById('uploadForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+
+    console.log('Form submitted, attempting to call OpenAI API...');
+
+    fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: "gpt-3.5-turbo",
+        messages: [
+          { role: "system", content: "You are a helpful assistant summarizing RFP documents." },
+          { role: "user", content: "Please summarize the following document." }
+        ]
+      })
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return response.json();
+    })
+    .then(data => {
+      console.log('OpenAI API response:', data);  // Log the API response
+      document.getElementById('statusMessage').textContent = 'Summary received successfully!';
+    })
+    .catch(error => {
+      console.error('Error during OpenAI API call:', error);
+      document.getElementById('statusMessage').textContent = 'Error retrieving summary.';
+    });
+  });
+</script>
 
 </body>
 </html>
