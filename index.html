@@ -15,4 +15,116 @@
   
   <button id="login">Login with Google</button>
   <form id="uploadForm" style="display:none;">
-    <inp
+    <input type="file" id="fileInput" name="files" multiple>
+    <br><br>
+    <button type="submit">Upload</button>
+  </form>
+
+  <p id="statusMessage"></p>
+
+  <script>
+    let accessToken = '';
+    let folderId = '';
+
+    document.getElementById('login').addEventListener('click', function() {
+      const oauthUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' +
+        'client_id=184708376714-fu015fp4sur3uasrb9mqmnrhrakmqtpb.apps.googleusercontent.com&' +
+        'redirect_uri=https://vixdom.github.io/platform25/&' +
+        'scope=https://www.googleapis.com/auth/drive.file&' +
+        'response_type=token&' +
+        'include_granted_scopes=true&' +
+        'prompt=consent';  // This ensures the consent screen always shows up.
+
+      // Redirect to the Google OAuth URL
+      window.location.href = oauthUrl;
+    });
+
+    window.onload = function() {
+      const hash = window.location.hash;
+      if (hash) {
+        // Extract the access token from the URL fragment
+        accessToken = new URLSearchParams(hash.substring(1)).get('access_token');
+        if (accessToken) {
+          // Hide the login button and show the upload form
+          document.getElementById('login').style.display = 'none';
+          document.getElementById('uploadForm').style.display = 'block';
+        }
+      }
+    };
+
+    function createFolder() {
+      const folderMetadata = {
+        'name': 'RFP Uploads',
+        'mimeType': 'application/vnd.google-apps.folder'
+      };
+
+      return fetch('https://www.googleapis.com/drive/v3/files', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(folderMetadata)
+      })
+      .then(response => response.json())
+      .then(data => {
+        folderId = data.id;
+        return folderId; // Return folder ID for further use
+      })
+      .catch(error => {
+        console.error('Error creating folder:', error);
+        throw new Error('Error creating folder.');
+      });
+    }
+
+    const form = document.getElementById('uploadForm');
+    const statusMessage = document.getElementById('statusMessage');
+
+    form.addEventListener('submit', function(event) {
+      event.preventDefault();
+
+      const files = document.getElementById('fileInput').files;
+      if (files.length === 0) {
+        statusMessage.textContent = 'Please select at least one file.';
+        return;
+      }
+
+      statusMessage.textContent = 'Uploading...';
+
+      // Create the folder and upload files
+      createFolder().then(folderId => {
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          const metadata = {
+            name: file.name,
+            mimeType: file.type,
+            parents: [folderId] // Upload to the newly created folder
+          };
+
+          const formData = new FormData();
+          formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+          formData.append('file', file);
+
+          fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${accessToken}`
+            },
+            body: formData
+          })
+          .then(response => response.json())
+          .then(data => {
+            statusMessage.textContent = 'Files uploaded successfully!';
+          })
+          .catch(error => {
+            statusMessage.textContent = 'Error uploading file!';
+            console.error('Error uploading file:', error);
+          });
+        }
+      }).catch(error => {
+        statusMessage.textContent = 'Error creating folder!';
+      });
+    });
+  </script>
+</body>
+</html>
