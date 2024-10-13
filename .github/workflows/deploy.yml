@@ -4,7 +4,7 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches:
-      - main  # Or the branch you are deploying from
+      - main  # Or the branch you're deploying from
 
 jobs:
   deploy:
@@ -12,21 +12,37 @@ jobs:
 
     steps:
     - name: Checkout Repository
-      uses: actions/checkout@v3  # Update to latest version (v3 uses Node 16 and up)
+      uses: actions/checkout@v3  # Use latest version
 
-    - name: Set up Git
+    - name: Set up Git for Deployment
       run: |
-        git config --global user.email "you@example.com"
-        git config --global user.name "Your Name"
-
+        git config --global user.email "actions@github.com"
+        git config --global user.name "GitHub Actions"
+    
     - name: Create config.js with API Key
       run: |
         echo "const OPENAI_API_KEY = '${{ secrets.OPENAI_KEY }}';" > config.js
       shell: bash
 
+    - name: Check Git Branch Status
+      run: |
+        git fetch origin
+        git branch -a  # Show all branches
+        git log --oneline --decorate  # Show recent commits to see if there are any conflicts
+
+    - name: Clean Previous gh-pages
+      run: |
+        git fetch origin gh-pages
+        git checkout gh-pages || git checkout --orphan gh-pages  # Checkout or create gh-pages
+        git rm -rf .  # Remove all previous content in gh-pages
+      shell: bash
+
     - name: Deploy to GitHub Pages
-      uses: peaceiris/actions-gh-pages@v4  # Update to latest version (v4 uses Node 16 and up)
+      uses: peaceiris/actions-gh-pages@v4  # Use latest version
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./  # Assuming your index.html is at the root
-        force_orphan: true  # Use an orphan commit to avoid branch conflicts
+        publish_dir: ./  # The directory where index.html is located
+        force_orphan: true  # Ensure a clean gh-pages branch
+
+    - name: Show Git Logs After Deployment
+      run: git log --oneline --decorate  # Check the state of the gh-pages branch after deployment
