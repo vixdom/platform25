@@ -4,7 +4,7 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches:
-      - main  # Or the branch you're deploying from
+      - main  # The branch you're deploying from
 
 jobs:
   deploy:
@@ -12,7 +12,7 @@ jobs:
 
     steps:
     - name: Checkout Repository
-      uses: actions/checkout@v3  # Use latest version
+      uses: actions/checkout@v3
 
     - name: Set up Git for Deployment
       run: |
@@ -24,25 +24,12 @@ jobs:
         echo "const OPENAI_API_KEY = '${{ secrets.OPENAI_KEY }}';" > config.js
       shell: bash
 
-    - name: Check Git Branch Status
-      run: |
-        git fetch origin
-        git branch -a  # Show all branches
-        git log --oneline --decorate  # Show recent commits to see if there are any conflicts
-
-    - name: Clean Previous gh-pages
-      run: |
-        git fetch origin gh-pages
-        git checkout gh-pages || git checkout --orphan gh-pages  # Checkout or create gh-pages
-        git rm -rf .  # Remove all previous content in gh-pages
-      shell: bash
+    # Remove the step that attempts to fetch and clean the gh-pages branch
 
     - name: Deploy to GitHub Pages
-      uses: peaceiris/actions-gh-pages@v4  # Use latest version
+      uses: peaceiris/actions-gh-pages@v4
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./  # The directory where index.html is located
-        force_orphan: true  # Ensure a clean gh-pages branch
-
-    - name: Show Git Logs After Deployment
-      run: git log --oneline --decorate  # Check the state of the gh-pages branch after deployment
+        destination_branch: gh-pages  # Deploy to the gh-pages branch
+        force_orphan: true  # Ensure a clean push to gh-pages
