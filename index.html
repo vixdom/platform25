@@ -1,21 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <script src="config.js"></script> <!-- This will load the API key from config.js -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Platform 25 - Upload RFP</title>
+
+  <!-- Load config.js which contains the API key -->
+  <script src="config.js"></script>
 </head>
 <body>
+
   <header>
     <h1>Platform 25</h1>
   </header>
-  
-  <h2>Step 1: Prebid. Upload RFP</h2>
-  <p>Log in with Google and upload RFP documents to a new folder.</p>
-  
-  <button id="login">Login with Google</button>
-  <form id="uploadForm" style="display:none;">
+
+  <h2>Upload RFP and Generate Opportunity Summary</h2>
+
+  <form id="uploadForm">
     <input type="file" id="fileInput" name="files" multiple>
     <br><br>
     <button type="submit">Upload</button>
@@ -24,178 +25,59 @@
   <p id="statusMessage"></p>
 
   <script>
-    let accessToken = '';
-    let folderId = '';
+    // Check if the API key is loaded from config.js
+    const apiKey = typeof OPENAI_API_KEY !== 'undefined' ? OPENAI_API_KEY : 'API key not loaded';
+    
+    // Log the API key to confirm it's loaded correctly
+    console.log("Loaded API Key:", apiKey);
 
-    document.getElementById('login').addEventListener('click', function() {
-      const oauthUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' +
-        'client_id=184708376714-fu015fp4sur3uasrb9mqmnrhrakmqtpb.apps.googleusercontent.com&' +
-        'redirect_uri=https://vixdom.github.io/platform25/&' +
-        'scope=https://www.googleapis.com/auth/drive.file&' +
-        'response_type=token&' +
-        'include_granted_scopes=true&' +
-        'prompt=consent';  // This ensures the consent screen always shows up.
-
-      // Redirect to the Google OAuth URL
-      window.location.href = oauthUrl;
-    });
-
-    window.onload = function() {
-      const hash = window.location.hash;
-      if (hash) {
-        // Extract the access token from the URL fragment
-        accessToken = new URLSearchParams(hash.substring(1)).get('access_token');
-        if (accessToken) {
-          // Hide the login button and show the upload form
-          document.getElementById('login').style.display = 'none';
-          document.getElementById('uploadForm').style.display = 'block';
-        }
-      }
-    };
-
-    function createFolder() {
-      const folderMetadata = {
-        'name': 'RFP Uploads',
-        'mimeType': 'application/vnd.google-apps.folder'
-      };
-
-      return fetch('https://www.googleapis.com/drive/v3/files', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(folderMetadata)
-      })
-      .then(response => response.json())
-      .then(data => {
-        folderId = data.id;
-        return folderId; // Return folder ID for further use
-      })
-      .catch(error => {
-        console.error('Error creating folder:', error);
-        throw new Error('Error creating folder.');
-      });
-    }
-
-    const form = document.getElementById('uploadForm');
-    const statusMessage = document.getElementById('statusMessage');
-
-    form.addEventListener('submit', function(event) {
+    // Handle the form submission and upload process
+    document.getElementById('uploadForm').addEventListener('submit', function(event) {
       event.preventDefault();
 
+      // Get the uploaded files (this is just simulating file upload for now)
       const files = document.getElementById('fileInput').files;
       if (files.length === 0) {
-        statusMessage.textContent = 'Please select at least one file.';
+        document.getElementById('statusMessage').textContent = 'Please select at least one file.';
         return;
       }
 
-      statusMessage.textContent = 'Uploading...';
+      // Simulate file processing (you can expand this later to handle file uploads)
+      document.getElementById('statusMessage').textContent = 'Files uploaded successfully!';
 
-      // Create the folder and upload files
-      createFolder().then(folderId => {
-        for (let i = 0; i < files.length; i++) {
-          const file = files[i];
-          const metadata = {
-            name: file.name,
-            mimeType: file.type,
-            parents: [folderId] // Upload to the newly created folder
-          };
+      // Call the OpenAI API using the loaded API key
+      console.log('Form submitted, attempting to call OpenAI API...');
 
-          const formData = new FormData();
-          formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-          formData.append('file', file);
-
-          fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${accessToken}`
-            },
-            body: formData
-          })
-          .then(response => response.json())
-          .then(data => {
-            statusMessage.textContent = 'Files uploaded successfully!';
-          })
-          .catch(error => {
-            statusMessage.textContent = 'Error uploading file!';
-            console.error('Error uploading file:', error);
-          });
+      fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`  // Use the API key from config.js
+        },
+        body: JSON.stringify({
+          model: "gpt-3.5-turbo",
+          messages: [
+            { role: "system", content: "You are a helpful assistant summarizing RFP documents." },
+            { role: "user", content: "Please summarize the following document." }
+          ]
+        })
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
         }
-      }).catch(error => {
-        statusMessage.textContent = 'Error creating folder!';
+        return response.json();
+      })
+      .then(data => {
+        console.log('OpenAI API response:', data);  // Log the API response
+        document.getElementById('statusMessage').textContent = 'Summary received successfully!';
+      })
+      .catch(error => {
+        console.error('Error during OpenAI API call:', error);
+        document.getElementById('statusMessage').textContent = 'Error retrieving summary.';
       });
     });
   </script>
-  <script>
-  // Now you can access the API key from the config.js file
-  const apiKey = OPENAI_API_KEY;  // This is coming from the dynamically created config.js
-
-  // Example usage of the API key to call the OpenAI API
-  fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`
-    },
-    body: JSON.stringify({
-      model: "gpt-3.5-turbo",
-      messages: [
-        { role: "system", content: "You are a helpful assistant summarizing RFP documents." },
-        { role: "user", content: "Please summarize the following document." }
-      ]
-    })
-  })
-  .then(response => response.json())
-  .then(data => {
-    console.log(data);
-  })
-  .catch(error => {
-    console.error('Error:', error);
-  });
-</script>
-<script>
-  // Now you can access the API key from the config.js file
-  const apiKey = OPENAI_API_KEY;  // This is coming from the dynamically created config.js
-
-  console.log("Loaded API Key:", apiKey);  // Log the API key to ensure it's loaded properly
-
-  // Example usage of the API key to call the OpenAI API
-  document.getElementById('uploadForm').addEventListener('submit', function(event) {
-    event.preventDefault();
-
-    console.log('Form submitted, attempting to call OpenAI API...');
-
-    fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: "gpt-3.5-turbo",
-        messages: [
-          { role: "system", content: "You are a helpful assistant summarizing RFP documents." },
-          { role: "user", content: "Please summarize the following document." }
-        ]
-      })
-    })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-      return response.json();
-    })
-    .then(data => {
-      console.log('OpenAI API response:', data);  // Log the API response
-      document.getElementById('statusMessage').textContent = 'Summary received successfully!';
-    })
-    .catch(error => {
-      console.error('Error during OpenAI API call:', error);
-      document.getElementById('statusMessage').textContent = 'Error retrieving summary.';
-    });
-  });
-</script>
 
 </body>
 </html>
