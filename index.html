@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script src="config.js"></script> <!-- This will load the API key from config.js -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Platform 25 - Upload RFP</title>
@@ -126,5 +127,33 @@
       });
     });
   </script>
+  <script>
+  // Now you can access the API key from the config.js file
+  const apiKey = OPENAI_API_KEY;  // This is coming from the dynamically created config.js
+
+  // Example usage of the API key to call the OpenAI API
+  fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model: "gpt-3.5-turbo",
+      messages: [
+        { role: "system", content: "You are a helpful assistant summarizing RFP documents." },
+        { role: "user", content: "Please summarize the following document." }
+      ]
+    })
+  })
+  .then(response => response.json())
+  .then(data => {
+    console.log(data);
+  })
+  .catch(error => {
+    console.error('Error:', error);
+  });
+</script>
+
 </body>
 </html>
