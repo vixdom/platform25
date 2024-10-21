@@ -25,6 +25,9 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Log the request being sent to OpenAI for debugging
+    console.log('Request body:', req.body);
+
     // Call the OpenAI API with the request body
     const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -40,6 +43,8 @@ export default async function handler(req, res) {
 
     // Check if the response is okay
     if (!openAIResponse.ok) {
+      const errorDetails = await openAIResponse.text();
+      console.error('OpenAI API error response:', errorDetails);
       throw new Error('Failed to communicate with OpenAI');
     }
 
