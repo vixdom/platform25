@@ -14,6 +14,7 @@ export default async function handler(req, res) {
 
   // Allow only POST requests
   if (req.method !== 'POST') {
+    console.error('Invalid request method:', req.method);
     return res.status(405).json({ message: 'Only POST requests are allowed' });
   }
 
@@ -21,14 +22,22 @@ export default async function handler(req, res) {
   const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
   if (!OPENAI_API_KEY) {
+    console.error('Error: Missing OpenAI API key');
     return res.status(500).json({ message: 'API key not configured' });
   }
 
   try {
-    // Log the request being sent to OpenAI for debugging
-    console.log('Request body:', req.body);
+    // Log the incoming request body
+    console.log('Incoming request body:', req.body);
+
+    // Ensure req.body has the correct structure
+    if (!req.body || !req.body.messages) {
+      console.error('Invalid request body:', req.body);
+      return res.status(400).json({ message: 'Invalid request body' });
+    }
 
     // Call the OpenAI API with the request body
+    console.log('Calling OpenAI API...');
     const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -41,15 +50,20 @@ export default async function handler(req, res) {
       }),
     });
 
+    // Log the response status and headers
+    console.log('OpenAI API response status:', openAIResponse.status);
+    console.log('OpenAI API response headers:', openAIResponse.headers);
+
     // Check if the response is okay
     if (!openAIResponse.ok) {
       const errorDetails = await openAIResponse.text();
       console.error('OpenAI API error response:', errorDetails);
-      throw new Error('Failed to communicate with OpenAI');
+      return res.status(openAIResponse.status).json({ message: 'Failed to communicate with OpenAI', details: errorDetails });
     }
 
     // Parse the JSON response from OpenAI
     const data = await openAIResponse.json();
+    console.log('OpenAI API response data:', data);
 
     // Send the response back to the client
     res.status(200).json(data);
