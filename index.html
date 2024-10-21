@@ -64,69 +64,95 @@
 
       statusMessage.textContent = 'Uploading...';
 
-      // Upload the file(s) to Google Drive
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const metadata = {
-          name: file.name,
-          mimeType: file.type
-        };
-
-        const formData = new FormData();
-        formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-        formData.append('file', file);
-
-        fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${accessToken}`
-          },
-          body: formData
+      // Create a new folder in Google Drive
+      fetch('https://www.googleapis.com/drive/v3/files', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: 'Platform25_Uploads',
+          mimeType: 'application/vnd.google-apps.folder'
         })
-        .then(response => response.json())
-        .then(data => {
-          if (data.error) {
-            throw new Error(data.error.message);
-          }
-          statusMessage.textContent = 'File uploaded successfully! Generating summary...';
+      })
+      .then(response => response.json())
+      .then(folderData => {
+        if (folderData.error) {
+          throw new Error(folderData.error.message);
+        }
 
-          // Call Vercel serverless function to summarize the uploaded document
-          fetch('https://platform25.vercel.app/api/openai', {
+        const folderId = folderData.id;
+
+        // Upload the file(s) to the created folder in Google Drive
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          const metadata = {
+            name: file.name,
+            parents: [folderId],
+            mimeType: file.type
+          };
+
+          const formData = new FormData();
+          formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+          formData.append('file', file);
+
+          fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessToken}`
             },
-            body: JSON.stringify({
-              messages: [
-                { role: "system", content: "You are a helpful assistant summarizing RFP documents." },
-                { role: "user", content: `Please summarize the following document uploaded to Google Drive: ${file.name}` }
-              ]
-            })
+            body: formData
           })
-          .then(response => {
-            if (!response.ok) {
-              throw new Error('Network response was not ok');
-            }
-            return response.json();
-          })
+          .then(response => response.json())
           .then(data => {
-            console.log('OpenAI API response:', data);
-            if (data.choices && data.choices.length > 0) {
-              statusMessage.textContent = 'Summary: ' + data.choices[0].message.content;
-            } else {
-              statusMessage.textContent = 'Unexpected response format from OpenAI';
+            if (data.error) {
+              throw new Error(data.error.message);
             }
+            statusMessage.textContent = 'File uploaded successfully! Generating summary...';
+
+            // Call Vercel serverless function to summarize the uploaded document
+            fetch('https://platform25.vercel.app/api/openai', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                messages: [
+                  { role: "system", content: "You are a helpful assistant summarizing RFP documents." },
+                  { role: "user", content: `Please summarize the following document uploaded to Google Drive: ${file.name}` }
+                ]
+              })
+            })
+            .then(response => {
+              if (!response.ok) {
+                throw new Error('Network response was not ok');
+              }
+              return response.json();
+            })
+            .then(data => {
+              console.log('OpenAI API response:', data);
+              if (data.choices && data.choices.length > 0) {
+                statusMessage.textContent = 'Summary: ' + data.choices[0].message.content;
+              } else {
+                statusMessage.textContent = 'Unexpected response format from OpenAI';
+              }
+            })
+            .catch(error => {
+              console.error('Error during OpenAI API call:', error);
+              statusMessage.textContent = 'Error retrieving summary.';
+            });
           })
           .catch(error => {
-            console.error('Error during OpenAI API call:', error);
-            statusMessage.textContent = 'Error retrieving summary.';
+            console.error('Error uploading file:', error);
+            statusMessage.textContent = 'Error uploading file!';
           });
-        })
-        .catch(error => {
-          console.error('Error uploading file:', error);
-          statusMessage.textContent = 'Error uploading file!';
-        });
-      }
+        }
+      })
+      .catch(error => {
+        console.error('Error creating folder:', error);
+        statusMessage.textContent = 'Error creating folder in Google Drive!';
+      });
     });
   </script>
 
