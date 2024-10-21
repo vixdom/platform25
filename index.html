@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Platform 25 - Upload RFP</title>
+  <link rel="icon" href="data:;base64,iVBORw0KGgo="> <!-- Placeholder favicon to prevent 404 error -->
 </head>
 <body>
 
@@ -39,8 +40,8 @@
       // Simulate the upload and OpenAI processing
       console.log('Form submitted, attempting to call Vercel serverless function...');
 
-      // Assuming we're sending a simple text request for summary
-      fetch('/api/openai', {
+      // Call the serverless function on Vercel
+      fetch('https://platform25.vercel.app/api/openai', { // Update URL to Vercel deployment
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
