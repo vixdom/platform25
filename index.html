@@ -14,7 +14,8 @@
 
   <h2>Upload RFP and Generate Opportunity Summary</h2>
 
-  <form id="uploadForm">
+  <button id="login">Login with Google</button>
+  <form id="uploadForm" style="display:none;">
     <input type="file" id="fileInput" name="files" multiple>
     <br><br>
     <button type="submit">Upload</button>
@@ -23,54 +24,109 @@
   <p id="statusMessage"></p>
 
   <script>
-    document.getElementById('uploadForm').addEventListener('submit', function(event) {
+    let accessToken = '';
+
+    // Google OAuth login
+    document.getElementById('login').addEventListener('click', () => {
+      const oauthUrl = 'https://accounts.google.com/o/oauth2/auth?' +
+        'client_id=P25_Oauth&' + // Replace 'YOUR_CLIENT_ID' with 'P25_Oauth'
+        'redirect_uri=https://vixdom.github.io/platform25/&' +
+        'scope=https://www.googleapis.com/auth/drive.file&' +
+        'response_type=token';
+
+      window.location.href = oauthUrl;
+    });
+
+    // Extract access token from URL after OAuth redirect
+    window.onload = function() {
+      const hash = window.location.hash;
+      if (hash) {
+        accessToken = new URLSearchParams(hash.substring(1)).get('access_token');
+        if (accessToken) {
+          document.getElementById('login').style.display = 'none';
+          document.getElementById('uploadForm').style.display = 'block';
+        }
+      }
+    };
+
+    const form = document.getElementById('uploadForm');
+    const statusMessage = document.getElementById('statusMessage');
+
+    // Handle file upload form submission
+    form.addEventListener('submit', function(event) {
       event.preventDefault();
 
       const files = document.getElementById('fileInput').files;
-
-      // Validate file selection
       if (files.length === 0) {
-        document.getElementById('statusMessage').textContent = 'Please select at least one file.';
+        statusMessage.textContent = 'Please select at least one file.';
         return;
       }
 
-      // Indicate to the user that files are being uploaded
-      document.getElementById('statusMessage').textContent = 'Uploading files...';
+      statusMessage.textContent = 'Uploading...';
 
-      // Simulate the upload and OpenAI processing
-      console.log('Form submitted, attempting to call Vercel serverless function...');
+      // Upload the file(s) to Google Drive
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const metadata = {
+          name: file.name,
+          mimeType: file.type
+        };
 
-      // Call the serverless function on Vercel
-      fetch('https://platform25.vercel.app/api/openai', { // Update URL to Vercel deployment
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messages: [
-            { role: "system", content: "You are a helpful assistant summarizing RFP documents." },
-            { role: "user", content: "Please summarize the following document." }
-          ]
+        const formData = new FormData();
+        formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+        formData.append('file', file);
+
+        fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`
+          },
+          body: formData
         })
-      })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
-        return response.json();
-      })
-      .then(data => {
-        console.log('OpenAI API response:', data);
-        if (data.choices && data.choices.length > 0) {
-          document.getElementById('statusMessage').textContent = 'Summary: ' + data.choices[0].message.content;
-        } else {
-          document.getElementById('statusMessage').textContent = 'Unexpected response format from OpenAI';
-        }
-      })
-      .catch(error => {
-        console.error('Error during OpenAI API call:', error);
-        document.getElementById('statusMessage').textContent = 'Error retrieving summary.';
-      });
+        .then(response => response.json())
+        .then(data => {
+          if (data.error) {
+            throw new Error(data.error.message);
+          }
+          statusMessage.textContent = 'File uploaded successfully! Generating summary...';
+
+          // Call Vercel serverless function to summarize the uploaded document
+          fetch('https://platform25.vercel.app/api/openai', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              messages: [
+                { role: "system", content: "You are a helpful assistant summarizing RFP documents." },
+                { role: "user", content: `Please summarize the following document uploaded to Google Drive: ${file.name}` }
+              ]
+            })
+          })
+          .then(response => {
+            if (!response.ok) {
+              throw new Error('Network response was not ok');
+            }
+            return response.json();
+          })
+          .then(data => {
+            console.log('OpenAI API response:', data);
+            if (data.choices && data.choices.length > 0) {
+              statusMessage.textContent = 'Summary: ' + data.choices[0].message.content;
+            } else {
+              statusMessage.textContent = 'Unexpected response format from OpenAI';
+            }
+          })
+          .catch(error => {
+            console.error('Error during OpenAI API call:', error);
+            statusMessage.textContent = 'Error retrieving summary.';
+          });
+        })
+        .catch(error => {
+          console.error('Error uploading file:', error);
+          statusMessage.textContent = 'Error uploading file!';
+        });
+      }
     });
   </script>
 
