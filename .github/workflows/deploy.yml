@@ -19,17 +19,25 @@ jobs:
         git config --global user.email "actions@github.com"
         git config --global user.name "GitHub Actions"
 
+    # Create the config.js file in the root directory
     - name: Create config.js with API Key
       run: |
-        echo "const OPENAI_API_KEY = '${{ secrets.OPENAI_KEY }}';" > config.js
+        echo "const OPENAI_API_KEY = '${{ secrets.OPENAI_KEY }}';" > ./config.js
       shell: bash
 
-    - name: Verify config.js Created
-      run: ls -la  # List files to ensure config.js was created
+    # Create a .nojekyll file to prevent GitHub Pages from using Jekyll
+    - name: Create .nojekyll
+      run: touch .nojekyll  # This will add the .nojekyll file to the root
 
+    # Check to ensure the config.js file is created
+    - name: Verify config.js Created
+      run: ls -la ./  # List files in the root to confirm config.js is present
+
+    # Deploy to GitHub Pages
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v4
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./  # The directory where index.html and config.js are located
-        publish_branch: gh-pages  # Specify the branch to push to
+        publish_branch: gh-pages  # Ensure it deploys to the gh-pages branch
+        keep_files: true  # Make sure all files are kept during the deployment
