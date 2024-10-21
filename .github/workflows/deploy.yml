@@ -6,6 +6,9 @@ on:
     branches:
       - main  # Or whichever branch you're deploying from
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE20: true  # Enforce Node.js 20
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
