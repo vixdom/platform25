@@ -27,7 +27,7 @@
   <script>
     // Check if the API key is loaded from config.js
     const apiKey = typeof OPENAI_API_KEY !== 'undefined' ? OPENAI_API_KEY : 'API key not loaded';
-    
+
     // Log the API key to confirm it's loaded correctly
     console.log("Loaded API Key:", apiKey);
 
@@ -52,7 +52,7 @@
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${apiKey}'  // Use the API key from config.js
+          'Authorization': `Bearer ${apiKey}`  // Use the API key from config.js
         },
         body: JSON.stringify({
           model: "gpt-3.5-turbo",
