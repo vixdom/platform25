@@ -18,7 +18,7 @@ jobs:
       run: |
         git config --global user.email "actions@github.com"
         git config --global user.name "GitHub Actions"
-    
+
     - name: Create config.js with API Key
       run: |
         echo "const OPENAI_API_KEY = '${{ secrets.OPENAI_KEY }}';" > config.js
@@ -32,5 +32,4 @@ jobs:
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./  # The directory where index.html is located
-        destination_branch: gh-pages  # Ensure it deploys to the gh-pages branch
-        force_orphan: true  # Ensure a clean push to gh-pages
+        publish_branch: gh-pages  # Specify the branch to push to
