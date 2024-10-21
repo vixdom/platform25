@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Platform 25 - Upload RFP</title>
+
+  <!-- Load config.js which contains the API key -->
+  <script src="config.js"></script>
+</head>
+<body>
+
+  <header>
+    <h1>Platform 25</h1>
+  </header>
+
+  <h2>Upload RFP and Generate Opportunity Summary</h2>
+
+  <form id="uploadForm">
+    <input type="file" id="fileInput" name="files" multiple>
+    <br><br>
+    <button type="submit">Upload</button>
+  </form>
+
+  <p id="statusMessage"></p>
+
+  <script>
+    // Check if the API key is loaded from config.js
+    const apiKey = typeof OPENAI_API_KEY !== 'undefined' ? OPENAI_API_KEY : 'API key not loaded';
+
+    // Log the API key to confirm it's loaded correctly
+    console.log("Loaded API Key:", apiKey);
+
+    // Handle the form submission and upload process
+    document.getElementById('uploadForm').addEventListener('submit', function(event) {
+      event.preventDefault();
+
+      // Get the uploaded files (this is just simulating file upload for now)
+      const files = document.getElementById('fileInput').files;
+      if (files.length === 0) {
+        document.getElementById('statusMessage').textContent = 'Please select at least one file.';
+        return;
+      }
+
+      // Simulate file processing (you can expand this later to handle file uploads)
+      document.getElementById('statusMessage').textContent = 'Files uploaded successfully!';
+
+      // Call the OpenAI API using the loaded API key
+      console.log('Form submitted, attempting to call OpenAI API...');
+
+      fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`  // Use the API key from config.js
+        },
+        body: JSON.stringify({
+          model: "gpt-3.5-turbo",
+          messages: [
+            { role: "system", content: "You are a helpful assistant summarizing RFP documents." },
+            { role: "user", content: "Please summarize the following document." }
+          ]
+        })
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log('OpenAI API response:', data);  // Log the API response
+        document.getElementById('statusMessage').textContent = 'Summary received successfully!';
+      })
+      .catch(error => {
+        console.error('Error during OpenAI API call:', error);
+        document.getElementById('statusMessage').textContent = 'Error retrieving summary.';
+      });
+    });
+  </script>
+
+</body>
+</html>
